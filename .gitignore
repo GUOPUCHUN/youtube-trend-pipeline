@@ -230,3 +230,9 @@ crash.log
 
 # AWS
 .aws-sam/
+
+# Local data
+data/
+
+# Local notes
+NOTES.md
