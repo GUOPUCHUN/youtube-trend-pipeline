@@ -1,57 +1,83 @@
-"""Minimal YouTube Data API client — first working version."""
+"""YouTube Data API client with retry and error classification."""
 
-import json
+import logging
 import os
-from datetime import datetime, timezone
-from pathlib import Path
+from typing import Any
 
 import requests
 from dotenv import load_dotenv
+from tenacity import (
+    before_sleep_log,
+    retry,
+    retry_if_exception_type,
+    stop_after_attempt,
+    wait_exponential,
+)
 
 load_dotenv()
 
+logger = logging.getLogger(__name__)
+
 API_URL = "https://www.googleapis.com/youtube/v3/videos"
 
+# Transient failures: rate limiting and server-side errors.
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 
-def fetch_most_popular(region_code: str = "JP", max_results: int = 10) -> dict:
-    """Fetch the mostPopular chart for a region."""
-    api_key = os.environ["YOUTUBE_API_KEY"]
 
+class RetryableAPIError(Exception):
+    """Transient failure — retrying may succeed."""
+
+
+class FatalAPIError(Exception):
+    """Client-side failure — retrying will never help."""
+
+
+@retry(
+    retry=retry_if_exception_type(
+        (
+            RetryableAPIError,
+            requests.exceptions.Timeout,
+            requests.exceptions.ConnectionError,
+        )
+    ),
+    wait=wait_exponential(multiplier=1, min=2, max=30),
+    stop=stop_after_attempt(4),
+    before_sleep=before_sleep_log(logger, logging.WARNING),
+    reraise=True,
+)
+def _get(params: dict[str, Any]) -> dict[str, Any]:
+    """Single HTTP call. Classifies failures so the retry policy can act."""
+    response = requests.get(API_URL, params=params, timeout=30)
+
+    if response.status_code in RETRYABLE_STATUS:
+        raise RetryableAPIError(
+            f"HTTP {response.status_code}: {response.text[:200]}"
+        )
+
+    if 400 <= response.status_code < 500:
+        # 400 (bad request), 403 (invalid key / quota exhausted for the day)
+        raise FatalAPIError(
+            f"HTTP {response.status_code}: {response.text[:200]}"
+        )
+
+    response.raise_for_status()
+    return response.json()
+
+
+def fetch_most_popular(
+    region_code: str = "JP",
+    max_results: int = 50,
+) -> dict[str, Any]:
+    """Fetch the mostPopular chart for a region.
+
+    Quota cost: 1 unit per call.
+    """
     params = {
         "part": "snippet,statistics,contentDetails",
         "chart": "mostPopular",
         "regionCode": region_code,
         "maxResults": max_results,
-        "key": api_key,
+        "key": os.environ["YOUTUBE_API_KEY"],
     }
-
-    response = requests.get(API_URL, params=params, timeout=30)
-    response.raise_for_status()
-    return response.json()
-
-
-def main() -> None:
-    data = fetch_most_popular()
-    items = data.get("items", [])
-    print(f"fetched {len(items)} items")
-
-    for item in items:
-        title = item["snippet"]["title"]
-        category = item["snippet"]["categoryId"]
-        views = item["statistics"].get("viewCount", "N/A")
-        print(f"[cat {category:>2}] {views:>12} | {title[:50]}")
-
-    # 幂等：文件名由日期决定，同一天重跑只会覆盖，不会重复
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    out_dir = Path("data/raw")
-    out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"{today}.json"
-
-    with out_path.open("w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-
-    print(f"saved to {out_path}")
-
-
-if __name__ == "__main__":
-    main()
+    logger.info("fetching mostPopular region=%s max=%s", region_code, max_results)
+    return _get(params)
