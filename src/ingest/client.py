@@ -50,15 +50,11 @@ def _get(params: dict[str, Any]) -> dict[str, Any]:
     response = requests.get(API_URL, params=params, timeout=30)
 
     if response.status_code in RETRYABLE_STATUS:
-        raise RetryableAPIError(
-            f"HTTP {response.status_code}: {response.text[:200]}"
-        )
+        raise RetryableAPIError(f"HTTP {response.status_code}: {response.text[:200]}")
 
     if 400 <= response.status_code < 500:
         # 400 (bad request), 403 (invalid key / quota exhausted for the day)
-        raise FatalAPIError(
-            f"HTTP {response.status_code}: {response.text[:200]}"
-        )
+        raise FatalAPIError(f"HTTP {response.status_code}: {response.text[:200]}")
 
     response.raise_for_status()
     return response.json()

@@ -2,7 +2,7 @@
 
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from src.ingest.client import fetch_most_popular
@@ -32,7 +32,7 @@ def main() -> None:
 
     # Idempotent: the key is derived from the date, so re-running a day
     # overwrites rather than duplicates.
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = datetime.now(UTC).strftime("%Y-%m-%d")
     out_dir = Path("data/raw")
     out_dir.mkdir(parents=True, exist_ok=True)
     out_path = out_dir / f"{today}.json"
