@@ -1,0 +1,41 @@
+[project]
+name = "youtube-trend-pipeline"
+version = "0.1.0"
+description = "Serverless data pipeline on AWS for YouTube chart data"
+requires-python = ">=3.12"
+dependencies = [
+    "requests>=2.32",
+    "python-dotenv>=1.0",
+    "tenacity>=9.0",
+    "pydantic>=2.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v --strict-markers"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["*/__init__.py"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "I",    # isort — import ordering
+    "UP",   # pyupgrade — modern syntax
+    "B",    # flake8-bugbear — likely bugs
+    "SIM",  # flake8-simplify
+]
