@@ -9,3 +9,10 @@ output "bucket_arn" {
 output "lambda_function_name" {
   value = aws_lambda_function.ingest.function_name
 }
+output "glue_database" {
+  value = aws_glue_catalog_database.main.name
+}
+
+output "athena_workgroup" {
+  value = aws_athena_workgroup.main.name
+}
