@@ -6,6 +6,7 @@ from typing import Any
 
 import requests
 from dotenv import load_dotenv
+from src.common.config import get_api_key
 from tenacity import (
     before_sleep_log,
     retry,
@@ -73,7 +74,7 @@ def fetch_most_popular(
         "chart": "mostPopular",
         "regionCode": region_code,
         "maxResults": max_results,
-        "key": os.environ["YOUTUBE_API_KEY"],
+        "key": get_api_key(),
     }
     logger.info("fetching mostPopular region=%s max=%s", region_code, max_results)
     return _get(params)

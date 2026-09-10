@@ -236,3 +236,9 @@ data/
 
 # Local notes
 NOTES.md
+
+# Build artifacts
+build/
+infra/lambda.zip
+
+infra/out.json
