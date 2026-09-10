@@ -1,12 +1,10 @@
 """YouTube Data API client with retry and error classification."""
 
 import logging
-import os
 from typing import Any
 
 import requests
 from dotenv import load_dotenv
-from src.common.config import get_api_key
 from tenacity import (
     before_sleep_log,
     retry,
@@ -14,6 +12,8 @@ from tenacity import (
     stop_after_attempt,
     wait_exponential,
 )
+
+from src.common.config import get_api_key
 
 load_dotenv()
 
