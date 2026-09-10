@@ -84,7 +84,8 @@ validation strategy, is in [docs/decisions.md](docs/decisions.md).
 - **Least privilege** — the Lambda role can write to the data bucket and
   read one SSM parameter. Nothing else.
 - **Infrastructure as code** — Terraform manages all 17 resources.
-- **Tested** — 159 tests, 31% coverage. Network calls are mocked with
+- **Tested** — 26 tests, 31% coverage on the pure logic paths (API client
+  and duration parsing are at 100%). Network calls are mocked with
   `responses`, so the suite consumes no API quota and runs in under a second.
 
 ## Cost
@@ -100,14 +101,16 @@ Designed to sit inside the AWS free tier:
 A budget alert is configured at $1 to catch anything unexpected.
 
 ## Repository layout
-src/
-├── ingest/ API client with retry, Lambda handler
-├── transform/ pydantic schemas, flattening, duration parsing
-└── common/ S3 and Parquet writers, config resolution
-infra/ Terraform: S3, IAM, Lambda, EventBridge, Glue, Athena
-tests/unit/ pytest suite, network mocked
-sql/ Athena analysis queries
-docs/ Architecture diagram, ADRs
+
+| Path | Contents |
+|---|---|
+| `src/ingest/` | API client with retry, Lambda handler |
+| `src/transform/` | pydantic schemas, flattening, duration parsing |
+| `src/common/` | S3 and Parquet writers, config resolution |
+| `infra/` | Terraform: S3, IAM, Lambda, EventBridge, Glue, Athena |
+| `tests/unit/` | pytest suite, network mocked |
+| `sql/` | Athena analysis queries |
+| `docs/` | Architecture diagram, ADRs |
 
 ## Running it
 
