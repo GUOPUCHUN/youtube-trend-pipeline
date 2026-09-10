@@ -1,4 +1,4 @@
-"""Entry point: fetch, validate, persist to S3."""
+"""Entry point: fetch, validate, persist raw JSON and curated Parquet."""
 
 import logging
 from datetime import UTC, datetime
@@ -6,9 +6,10 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from src.common.parquet import build_curated_key, put_parquet
 from src.common.s3 import build_raw_key, put_json
 from src.ingest.client import fetch_most_popular
-from src.transform.schema import VideoListResponse
+from src.transform.flatten import flatten
 
 load_dotenv()
 
@@ -22,19 +23,20 @@ REGION_CODE = "JP"
 
 
 def run() -> dict[str, Any]:
-    """Fetch one day of chart data and store it in the raw zone."""
+    """Fetch one day of chart data; write raw JSON then curated Parquet."""
     raw = fetch_most_popular(region_code=REGION_CODE, max_results=50)
 
-    validated = VideoListResponse.model_validate(raw)
-    logger.info("validated %d items", len(validated.items))
-
     today = datetime.now(UTC).strftime("%Y-%m-%d")
-    key = build_raw_key(today, REGION_CODE)
-    uri = put_json(key, raw)
+
+    raw_uri = put_json(build_raw_key(today, REGION_CODE), raw)
+
+    rows = flatten(raw, partition_date=today, region_code=REGION_CODE)
+    curated_uri = put_parquet(build_curated_key(today, REGION_CODE), rows)
 
     return {
-        "item_count": len(validated.items),
-        "s3_uri": uri,
+        "row_count": len(rows),
+        "raw_uri": raw_uri,
+        "curated_uri": curated_uri,
         "partition_date": today,
     }
 
@@ -45,5 +47,4 @@ def lambda_handler(event: dict, context: object) -> dict[str, Any]:
 
 
 if __name__ == "__main__":
-    result = run()
-    logger.info("done: %s", result)
+    logger.info("done: %s", run())

@@ -10,7 +10,7 @@ resource "aws_lambda_function" "ingest" {
   handler       = "src.ingest.handler.lambda_handler"
   runtime       = "python3.12"
   timeout       = 60
-  memory_size   = 256
+  memory_size   = 512
   tags          = local.common_tags
 
   filename         = "${path.module}/lambda.zip"

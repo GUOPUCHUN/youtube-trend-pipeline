@@ -27,7 +27,7 @@ resource "aws_iam_role_policy" "lambda" {
       {
         Effect   = "Allow"
         Action   = ["s3:PutObject"]
-        Resource = "${aws_s3_bucket.data.arn}/raw/*"
+        Resource = "${aws_s3_bucket.data.arn}/*"
       },
       {
         Effect   = "Allow"

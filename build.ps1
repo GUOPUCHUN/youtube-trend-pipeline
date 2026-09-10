@@ -15,7 +15,7 @@ pip install `
     --only-binary=:all: `
     --platform manylinux2014_x86_64 `
     --python-version 3.12 `
-    requests python-dotenv tenacity pydantic
+        requests python-dotenv tenacity pydantic pyarrow
 
 # Application code.
 Copy-Item -Path "src" -Destination "$BuildDir/src" -Recurse
